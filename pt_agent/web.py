@@ -171,6 +171,8 @@ class Handler(BaseHTTPRequestHandler):
 
     if path == "/":
       return self._serve_static_file("index.html")
+    if path == "/admin":
+      return self._serve_static_file("admin.html")
 
     if path.startswith("/static/"):
       # Serve files from webui/static
@@ -188,6 +190,8 @@ class Handler(BaseHTTPRequestHandler):
 
     if path == "/api/chat-history":
       return self._handle_chat_history()
+    if path == "/api/admin/snapshot":
+      return self._handle_admin_snapshot()
 
     self.send_error(404, "Not found")
 
@@ -320,6 +324,93 @@ class Handler(BaseHTTPRequestHandler):
     with get_conn(self.db_path) as conn:
       history = get_recent_chat_history(conn, user_id, limit=limit)
     _send_json(self, 200, {"chat_history": history})
+
+  def _handle_admin_snapshot(self) -> None:
+    """Returns a debug snapshot to explain logic + DB state."""
+    user_id = self._get_user_id_from_query()
+
+    def fetch_table_rows(conn, table: str, limit: int = 50) -> list[dict[str, Any]]:
+      # Get columns dynamically.
+      cols_info = conn.execute(f"PRAGMA table_info({table})").fetchall()
+      cols = [row[1] for row in cols_info]
+      if not cols:
+        return []
+
+      # Try ordering by id desc if present, otherwise natural order.
+      order_sql = " ORDER BY id DESC" if "id" in cols else ""
+      rows = conn.execute(
+        f"SELECT * FROM {table}{order_sql} LIMIT ?",
+        (limit,),
+      ).fetchall()
+      out: list[dict[str, Any]] = []
+      for row in rows:
+        obj = {}
+        for i, col in enumerate(cols):
+          obj[col] = row[i]
+        out.append(obj)
+      return out
+
+    with get_conn(self.db_path) as conn:
+      week_start, week_end = get_current_week_bounds()
+      workouts_this_week = get_workouts_for_current_week(conn, user_id)
+
+      has_profile = has_user_profile(conn, user_id)
+      profile = get_user_profile(conn, user_id) if has_profile else None
+      weekly_plan = get_weekly_plan(conn, user_id) if has_profile else ""
+      training_summary = get_training_summary(conn, user_id) if has_profile else ""
+      chat_history = get_recent_chat_history(conn, user_id, limit=30) if has_profile else []
+
+      # Table row counts.
+      table_names = [
+        "user_profile",
+        "weekly_plan",
+        "training_summary",
+        "workout_logs",
+        "chat_log",
+      ]
+      table_counts = {}
+      for t in table_names:
+        table_counts[t] = conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+
+      raw_tables = {
+        "user_profile": fetch_table_rows(conn, "user_profile", limit=20),
+        "weekly_plan": fetch_table_rows(conn, "weekly_plan", limit=20),
+        "training_summary": fetch_table_rows(conn, "training_summary", limit=20),
+        "workout_logs": fetch_table_rows(conn, "workout_logs", limit=100),
+        "chat_log": fetch_table_rows(conn, "chat_log", limit=100),
+      }
+
+    _send_json(
+      self,
+      200,
+      {
+        "meta": {
+          "user_id": user_id,
+          "db_path": self.db_path,
+          "model_name": self.model_name,
+          "app_name": self.app_name,
+          "session_id": self.session_id,
+        },
+        "logic_view": {
+          "has_profile": has_profile,
+          "week_start": week_start,
+          "week_end": week_end,
+          "workouts_this_week_count": len(workouts_this_week),
+          "workouts_this_week": workouts_this_week,
+          "weekly_plan_length": len(weekly_plan or ""),
+          "training_summary_length": len(training_summary or ""),
+          "chat_history_count": len(chat_history),
+        },
+        "current_state": {
+          "profile": profile,
+          "weekly_plan": weekly_plan,
+          "training_summary": training_summary,
+          "chat_history": chat_history,
+        },
+        "table_counts": table_counts,
+        "raw_tables": raw_tables,
+      },
+    )
 
   def _handle_intake(self) -> None:
     user_id = self._get_user_id_from_query()

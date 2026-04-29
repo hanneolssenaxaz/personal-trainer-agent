@@ -12,3 +12,5 @@ dependencies = [
 [tool.uv]
 dev-dependencies = []
 
+.env
+
