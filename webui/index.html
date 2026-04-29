@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Personal Trainer Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="header">
+        <h1>Personal Trainer Agent (PoC)</h1>
+        <p class="subtitle">Gentle structure for your training week - chat, plan, and workout logging.</p>
+      </header>
+
+      <section class="grid">
+        <aside class="panel">
+          <h2>Weekly Plan</h2>
+          <div id="weekProgressSummary" class="weekProgressSummary"></div>
+          <div id="weeklyPlanPretty" class="weeklyPlanPretty"></div>
+          <pre id="weeklyPlan" class="pre"></pre>
+        </aside>
+
+        <section class="panel panel-chat">
+          <h2>Chat</h2>
+          <div id="chatHistory" class="chatHistory"></div>
+
+          <form id="chatForm" class="chatForm">
+            <input
+              id="chatInput"
+              type="text"
+              placeholder="Ask the coach a question..."
+              autocomplete="off"
+              required
+            />
+            <button type="submit">Send</button>
+          </form>
+        </section>
+
+        <section class="panel panel-log">
+          <h2>Log Workout</h2>
+          <div class="fieldRow">
+            <label for="workoutDate">Date</label>
+            <input id="workoutDate" type="date" />
+          </div>
+
+          <div class="field">
+            <label>What you did (simple format)</label>
+            <div id="exerciseRows" class="exerciseRows"></div>
+            <button id="addExerciseBtn" type="button">+ Add exercise</button>
+            <textarea
+              id="workoutNotes"
+              placeholder="Optional notes: energy, pain, sleep, etc."
+              rows="3"
+            ></textarea>
+            <details>
+              <summary>Advanced: edit raw workout text</summary>
+              <textarea
+                id="workoutLogText"
+                placeholder="Raw log text (optional)"
+                rows="4"
+              ></textarea>
+            </details>
+          </div>
+
+          <button id="logWorkoutBtn" class="primary">Log workout</button>
+        </section>
+      </section>
+
+      <section class="panel">
+        <h2>This Week (Mon-Sun)</h2>
+        <div id="weekProgressCount" class="weekProgressCount"></div>
+        <div id="weekWorkoutList" class="weekWorkoutList"></div>
+      </section>
+
+      <section id="intakePanel" class="intakePanel hidden">
+        <div class="intakeCard">
+          <h2>Intake (tell the coach about you)</h2>
+          <p>Fill in these fields once. After that, the app will remember you.</p>
+
+          <form id="intakeForm" class="intakeForm">
+            <label>1) Main goal</label>
+            <input name="goals" type="text" placeholder="strength / fat loss / general fitness" required />
+
+            <label>2) Days per week</label>
+            <input name="days_per_week" type="text" placeholder="3-5" required />
+
+            <label>3) Experience level</label>
+            <input name="experience_level" type="text" placeholder="beginner / intermediate / advanced" required />
+
+            <label>4) Equipment you have</label>
+            <input name="equipment" type="text" placeholder="dumbbells / barbell / machines / none" required />
+
+            <label>5) Injuries / limitations</label>
+            <input name="injuries" type="text" placeholder="none or details" required />
+
+            <label>6) Schedule constraints</label>
+            <input
+              name="schedule_constraints"
+              type="text"
+              placeholder="mornings only, max 45 min, etc."
+              required
+            />
+
+            <button type="submit" class="primary">Save intake & generate plan</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
+
